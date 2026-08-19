@@ -101,6 +101,44 @@ strands-guardian --model us.anthropic.claude-sonnet-4-20250514 "Monitor Texas gr
 
 ---
 
+## Live Dashboard
+
+<p align="center">
+  <img src="assets/dashboard-dossiers.png" alt="Dossiers Tab" width="800">
+</p>
+
+Strands Guardian includes a real-time SOC dashboard. Click any dossier to expand the full threat briefing:
+
+<p align="center">
+  <img src="assets/dashboard-dossiers-expanded.png" alt="Expanded P1 Dossier" width="800">
+</p>
+
+### Threat Intelligence Feed
+
+<p align="center">
+  <img src="assets/dashboard-threat-intel.png" alt="Threat Intel Tab" width="800">
+</p>
+
+### MITRE ATT&CK Mapping (ICS + Enterprise)
+
+<p align="center">
+  <img src="assets/dashboard-mitre.png" alt="MITRE ATT&CK Tab" width="800">
+</p>
+
+### Geo-Event Fusion (GDACS / NASA FIRMS / USGS / NOAA)
+
+<p align="center">
+  <img src="assets/dashboard-geo.png" alt="Geo-Events Tab" width="800">
+</p>
+
+### CISA Known Exploited Vulnerabilities
+
+<p align="center">
+  <img src="assets/dashboard-cisa-kev.png" alt="CISA KEV Tab" width="800">
+</p>
+
+---
+
 ## Demo
 
 https://github.com/user-attachments/assets/demo_video.mp4

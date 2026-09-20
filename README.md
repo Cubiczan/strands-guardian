@@ -199,6 +199,10 @@ No authentication surface of its own exists. Grepping the tree for role/auth sur
 
 **Revisit trigger:** shared team use with per-analyst scoping appears. Then adopt the canonical ReBAC gateway.
 
-### Row 18 — degradation ladder: adoption identified, NOT yet implemented
+### Row 18 — degradation ladder: REVERSED (verified against current state)
 
-The tool-calling surfaces (network-facing threat tools) are the canonical spot for a degradation ladder. Recorded as open adoption work in the wave-C report; not silently claimed as done.
+All four threat feeds (`src/strands_guardian/feeds/firms.py`, `gdacs.py`, `noaa.py`, `usgs.py`) wrap deterministic HTTP fetches — parse, classify, and score are pure functions with no model in the loop anywhere in the analysis path. The row's reversal condition (no model-dependent path to degrade) holds: a tiered degradation ladder would re-express the existing try/except-and-cache as ceremony. Fetch failure handling today: `except Exception` → `logger.warning` → return the events accumulated so far, per feed.
+
+**Hygiene flag (follow-up, not fixed in this wave):** the shared failure shape has two weaknesses worth a dedicated change — (1) degradation is implicit: a partially-fetched or empty event list is returned and consumed exactly like a fresh full one, with only a warning in the logs; (2) the partial/empty result is written back over the previously cached good data (`_cache.set(cache_key, events)` runs on the failure path too), so one bad fetch cycle destroys the stale-data fallback. A fix should keep stale cache on failure, mark the payload as degraded, and surface it in the analysis output.
+
+**Revisit trigger:** any model-in-the-loop tool lands (LLM-scored threat narratives, model-classified incidents). Then adopt the canonical bounded-degradation ladder — explicit FULL → DEGRADED → OFF tiers with evidence-carrying confidence, per the incident-commander pattern.

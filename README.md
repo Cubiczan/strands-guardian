@@ -197,7 +197,7 @@ Third-party feed content retains original licensing:
 
 No authentication surface of its own exists. Grepping the tree for role/auth surfaces returns only threat telemetry strings — threat-intel tool modules describing third-party systems ("Modbus TCP lacks authentication", "S7comm protocol allows unauthenticated enumeration" in src/strands_guardian/tools/mitre_tools.py) — findings ABOUT other systems' auth gaps, not an auth model of this one. It is a single-operator security research CLI: no users, roles, or tenants.
 
-**Revisit trigger:** shared team use with per-analyst scoping appears. Then adopt the canonical ReBAC gateway.
+**Revisit trigger:** the settled product context lists three INDEPENDENT triggers, any one of which fires adoption — (1) multi-operator alert acknowledgments land, (2) role-differentiated dashboards appear, (3) Twingate identity data is used in-process rather than observed at the infrastructure layer — plus the scoped form: shared team use with per-analyst scoping. Then adopt the canonical ReBAC gateway.
 
 ### Row 18 — degradation ladder: adoption identified, NOT yet implemented
 

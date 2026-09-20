@@ -190,3 +190,15 @@ Third-party feed content retains original licensing:
 )
 - MITRE ATT&CK: CC BY 4.0
 - CISA KEV: Public domain
+
+## Propagation decisions (SecOps/Gov wave C)
+
+### Row 17 — ReBAC gateway: REVERSED (verified against current state)
+
+No authentication surface of its own exists. Grepping the tree for role/auth surfaces returns only threat telemetry strings — threat-intel tool modules describing third-party systems ("Modbus TCP lacks authentication", "S7comm protocol allows unauthenticated enumeration" in src/strands_guardian/tools/mitre_tools.py) — findings ABOUT other systems' auth gaps, not an auth model of this one. It is a single-operator security research CLI: no users, roles, or tenants.
+
+**Revisit trigger:** shared team use with per-analyst scoping appears. Then adopt the canonical ReBAC gateway.
+
+### Row 18 — degradation ladder: adoption identified, NOT yet implemented
+
+The tool-calling surfaces (network-facing threat tools) are the canonical spot for a degradation ladder. Recorded as open adoption work in the wave-C report; not silently claimed as done.

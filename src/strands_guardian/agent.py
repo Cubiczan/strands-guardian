@@ -11,6 +11,50 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# Amazon Nova Pro on the US cross-region inference profile, invoked from us-east-1.
+# Claude on Bedrock is Marketplace-billed and IAM-denied for this account.
+DEFAULT_MODEL_ID = "us.amazon.nova-pro-v1:0"
+DEFAULT_BEDROCK_REGION = "us-east-1"
+
+
+class AnthropicModelRejected(ValueError):
+    """Raised when an Anthropic Bedrock model id is requested."""
+
+
+def is_anthropic_model_id(model_id: str) -> bool:
+    """Return True when the id's provider segment is Anthropic.
+
+    Matches ``anthropic.*``, regional profiles such as ``us.anthropic.*``,
+    and foundation-model ARNs that embed ``/anthropic.``.
+    """
+    return "anthropic." in model_id.lower()
+
+
+def resolve_model_id(model_id: Optional[str] = None) -> str:
+    """Resolve the Bedrock model id.
+
+    Precedence is an explicit argument, then ``STRANDS_MODEL_ID``, then
+    Amazon Nova Pro. Blank values are skipped. Anthropic provider ids raise
+    :class:`AnthropicModelRejected` before any Bedrock call.
+    """
+    candidates = (model_id, os.environ.get("STRANDS_MODEL_ID"), DEFAULT_MODEL_ID)
+    resolved = DEFAULT_MODEL_ID
+    for candidate in candidates:
+        if candidate is not None and candidate.strip():
+            resolved = candidate.strip()
+            break
+
+    if is_anthropic_model_id(resolved):
+        raise AnthropicModelRejected(
+            f"Anthropic Bedrock model id {resolved!r} is not allowed. "
+            "Claude on Amazon Bedrock is billed through AWS Marketplace and is "
+            "IAM-denied on this account; promotional credits do not cover it. "
+            f"Use Amazon Nova Pro ({DEFAULT_MODEL_ID!r}) or set --model / "
+            "STRANDS_MODEL_ID to a non-Anthropic Bedrock model id."
+        )
+    return resolved
+
+
 # Try to import Strands Agents SDK; graceful fallback for demo mode
 try:
     from strands import Agent
@@ -227,27 +271,38 @@ def create_guardian_agent(
 ) -> "Agent":
     """Create and return a Strands Agent pre-loaded with Guardian tools.
 
+    The model is Amazon Nova Pro (``us.amazon.nova-pro-v1:0``) in ``us-east-1``
+    unless ``model_id`` or ``STRANDS_MODEL_ID`` selects another non-Anthropic
+    Bedrock model. The Strands ``BedrockModel`` calls the Bedrock Converse API.
+
     Args:
-        model_id: Bedrock model ID (e.g. "us.anthropic.claude-sonnet-4-20250514").
-                  Falls back to STRANDS_MODEL_ID env var or default.
+        model_id: Bedrock model ID (for example ``us.amazon.nova-pro-v1:0``).
+                  Falls back to ``STRANDS_MODEL_ID``, then Nova Pro.
         mock: Use mock data for demo.
 
     Returns:
         Configured Strands Agent instance.
+
+    Raises:
+        AnthropicModelRejected: If the resolved model id is an Anthropic model.
+        RuntimeError: If the Strands SDK is not installed.
     """
+    resolved_model_id = resolve_model_id(model_id)
     if not STRANDS_AVAILABLE:
         raise RuntimeError(
             "strands-agents SDK is required for agent mode. "
             "Install with: pip install strands-agents"
         )
 
-    _model = model_id or os.environ.get(
-        "STRANDS_MODEL_ID",
-        "us.anthropic.claude-sonnet-4-20250514",
+    from strands.models import BedrockModel
+
+    bedrock_model = BedrockModel(
+        model_id=resolved_model_id,
+        region_name=DEFAULT_BEDROCK_REGION,
     )
 
     agent = Agent(
-        model=_model,
+        model=bedrock_model,
         system_prompt=SYSTEM_PROMPT,
         tools=[
             _wrap_tool(discover_ics_assets, mock),
@@ -293,13 +348,17 @@ def run_guardian(
 
     Args:
         prompt: Natural language prompt (e.g. "Monitor grid assets in the Southeast US").
-        model_id: Bedrock model ID for Strands agent.
+        model_id: Bedrock model ID for Strands agent. Anthropic ids are rejected.
         mock: Use mock data for demo.
         output_dir: Directory to save generated dossiers.
 
     Returns:
         Agent response or pipeline summary.
+
+    Raises:
+        AnthropicModelRejected: If the resolved model id is an Anthropic model.
     """
+    resolved_model_id = resolve_model_id(model_id)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
@@ -307,8 +366,8 @@ def run_guardian(
     )
 
     if STRANDS_AVAILABLE and not mock:
-        agent = create_guardian_agent(model_id=model_id, mock=mock)
-        print(f"\U0001f916 Strands Guardian agent initialized (model: {model_id or 'default'})")
+        agent = create_guardian_agent(model_id=resolved_model_id, mock=mock)
+        print(f"\U0001f916 Strands Guardian agent initialized (model: {resolved_model_id})")
         print(f"\U0001f4ac Prompt: {prompt}\n")
         result = agent(prompt)
         return str(result)
@@ -335,7 +394,7 @@ def main():
 Examples:
   strands-guardian "Monitor grid assets in the Southeast US"
   strands-guardian --mock --output ./reports "Analyze power grid SCADA"
-  strands-guardian --model us.anthropic.claude-sonnet-4-20250514 "Full southeast scan"
+  strands-guardian --model us.amazon.nova-pro-v1:0 "Full southeast scan"
         """,
     )
     parser.add_argument(
@@ -344,7 +403,13 @@ Examples:
         default=["Monitor grid assets in the Southeast US"],
         help="Natural language prompt for the agent",
     )
-    parser.add_argument("--model", help="Bedrock model ID")
+    parser.add_argument(
+        "--model",
+        help=(
+            "Bedrock model ID "
+            f"(default: {DEFAULT_MODEL_ID}). Anthropic model ids are rejected."
+        ),
+    )
     parser.add_argument("--mock", action="store_true", default=True, help="Use mock data")
     parser.add_argument("--live", action="store_true", help="Use live API data")
     parser.add_argument("--output", default="./dossiers", help="Output directory for dossiers")
@@ -353,6 +418,11 @@ Examples:
     args = parser.parse_args()
     prompt = " ".join(args.prompt)
     mock = args.mock and not args.live
+
+    try:
+        resolve_model_id(args.model)
+    except AnthropicModelRejected as exc:
+        parser.error(str(exc))
 
     run_guardian(
         prompt=prompt,

@@ -36,7 +36,7 @@ The agent is built with the **Strands Agents SDK** and orchestrated by an LLM vi
 ```
 User: "Monitor grid assets in the Southeast US"
   ↓
-Strands Agent (Bedrock Claude) — autonomous loop
+Strands Agent (Amazon Bedrock, Amazon Nova Pro) — autonomous loop
   ↓
 ├─ discover_ics_assets(region="Southeast US")
 │   → 5 exposed ICS endpoints
@@ -92,11 +92,40 @@ strands-guardian --live "Full southeast scan"
 
 ### Run with Strands Agent + Bedrock
 
+The default model is Amazon Nova Pro (`us.amazon.nova-pro-v1:0`) in `us-east-1`, called through the Strands `BedrockModel` (Bedrock Converse API). Override it with `--model` or `STRANDS_MODEL_ID`. Anthropic model ids are rejected.
+
 ```bash
 pip install strands-agents
 export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
-strands-guardian --model us.anthropic.claude-sonnet-4-20250514 "Monitor Texas grid"
+export AWS_DEFAULT_REGION=us-east-1
+strands-guardian --model us.amazon.nova-pro-v1:0 "Monitor Texas grid"
+```
+
+Nova Pro is covered by AWS promotional credits. The IAM policy below allows Converse against that inference profile and the US foundation models it can route to:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "NovaProConverse",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:Converse",
+        "bedrock:ConverseStream",
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:*:*:inference-profile/us.amazon.nova-pro-v1:0",
+        "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0",
+        "arn:aws:bedrock:us-east-2::foundation-model/amazon.nova-pro-v1:0",
+        "arn:aws:bedrock:us-west-2::foundation-model/amazon.nova-pro-v1:0"
+      ]
+    }
+  ]
+}
 ```
 
 ---
@@ -161,7 +190,7 @@ Each analyzed asset produces a Markdown dossier and a JSON machine-readable file
 ## Tech Stack
 
 - **Agent Framework**: [Strands Agents SDK](https://github.com/strands-agents/sdk-python) (Python)
-- **LLM**: Amazon Bedrock (Claude)
+- **LLM**: Amazon Bedrock (Amazon Nova Pro, `us.amazon.nova-pro-v1:0`, `us-east-1`)
 - **ICS Discovery**: [Censys Platform API v3](https://censys.io)
 - **OSINT**: [SerpApi](https://serpapi.com) (primary) + [Tavily](https://tavily.com) (fallback)
 - **Threat Frameworks**: [MITRE ATT&CK](https://attack.mitre.org) (ICS + Enterprise), [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog), NVD

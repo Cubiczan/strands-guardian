@@ -174,7 +174,7 @@ img,d = bg()
 ctr(d,"BUILT WITH STRANDS AGENTS SDK",100,fb(48),(0,200,255))
 for i,t in enumerate([
     "Strands SDK orchestrates all 7 tools via @tool decorator",
-    "Amazon Bedrock (Claude) as the LLM reasoning engine",
+    "Amazon Bedrock (Amazon Nova Pro) as the LLM reasoning engine",
     "Agent autonomously decides which tools to call and when",
     "Structured output parsing for reliable data flow",
     "Mock mode for zero-config demo / CI / development",

@@ -319,7 +319,7 @@ img, draw = make_bg()
 text_center(draw, "BUILT WITH STRANDS AGENTS SDK", 100, get_font(48, True), (0, 200, 255))
 points = [
     "Strands SDK orchestrates all 7 tools via @tool decorator",
-    "Amazon Bedrock (Claude) as the LLM reasoning engine",
+    "Amazon Bedrock (Amazon Nova Pro) as the LLM reasoning engine",
     "Agent autonomously decides which tools to call and when",
     "Structured output parsing for reliable data flow",
     "Mock mode for zero-config demo / CI / development",
